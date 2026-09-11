@@ -1,8 +1,22 @@
 # Mi API
 
-Base de servidor para una API REST con Node.js y Express.
+Base de servidor para una API REST con Node.js y Express, acompañada de un
+frontend modular en React + Vite.
 
 ## Estructura del proyecto
+
+El backend y el frontend viven en el mismo repositorio, pero tienen sus
+dependencias y comandos separados:
+
+```text
+├── src/                 # API Express
+└── frontend/            # Aplicación React + Vite
+    └── src/
+        ├── services/    # Cliente para consumir la API
+        └── modules/     # Módulos de cada solución
+```
+
+## Estructura del backend
 
 ```
 mi-api/
@@ -39,6 +53,28 @@ mi-api/
    ```
    http://localhost:3000/api/health
    ```
+
+### Frontend
+
+En otra terminal:
+
+```bash
+cd frontend
+npm install
+cp .env.example .env
+npm run dev
+```
+
+El frontend quedará disponible en `http://localhost:5173` y usará
+`VITE_API_URL` para conectarse al backend. Cada solución nueva puede agregarse
+como un módulo dentro de `frontend/src/modules/`.
+
+Para generar la versión de producción:
+
+```bash
+cd frontend
+npm run build
+```
 
 ## Cómo agregar un endpoint nuevo
 
