@@ -20,4 +20,14 @@ app.use('/api', mainRouter);
 app.use(notFound);
 app.use(errorHandler);
 
+//RUTAS DE LA SOLUCION 1
+
+
+
+//RUTAS DE LA SOLUCION 2
+
+
+
+
+
 export default app;
