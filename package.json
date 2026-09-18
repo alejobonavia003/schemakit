@@ -1,13 +1,18 @@
 {
-  "name": "mi-api",
+  "name": "express-prisma-template",
   "version": "1.0.0",
-  "description": "Base de servidor API con Node.js y Express",
+  "description": "Plantilla multi-solución con Express, Prisma y PostgreSQL",
   "main": "src/server.js",
   "type": "module",
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "postinstall": "prisma skills sync || exit 0"
+    "build": "npm run prisma:generate && npm --prefix frontend install && npm --prefix frontend run build",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:db:push": "prisma db push",
+    "frontend:build": "npm --prefix frontend run build"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
@@ -16,7 +21,6 @@
     "morgan": "^1.10.0"
   },
   "devDependencies": {
-    "dotenv": "^17.4.2",
     "nodemon": "^3.1.4",
     "prisma": "^6.19.3"
   }

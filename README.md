@@ -1,153 +1,156 @@
-# Ladies API
+# Plantilla multi-solución
 
-Proyecto base para una API REST con Node.js + Express y frontend React + Vite. El backend usa PostgreSQL como base de datos y Prisma como ORM, con un flujo local de desarrollo preparado para migrar sin cambios a producción.
-
-## Stack actual
-
-- Backend: Node.js + Express
-- Base de datos: PostgreSQL 16
-- ORM: Prisma
-- Frontend: React + Vite
-- Contenerización local: Docker Compose
+Plantilla genérica para construir varias soluciones sobre una misma API:
+Express en el backend, Prisma como ORM, PostgreSQL como base de datos y un
+frontend React + Vite opcional.
 
 ## Requisitos
 
-- Node.js 18 o superior
-- npm
-- Docker + Docker Compose
+- Node.js 18 o superior y npm
+- Docker con Docker Compose para el entorno local
+- Una base PostgreSQL para cualquier entorno desplegado
 
-## Estructura general
+## Estructura
 
 ```text
-ladies/
-├── src/                 # Backend Express
-├── frontend/            # Frontend React + Vite
-├── prisma/              # Schema y migraciones de Prisma
-├── docker-compose.yml    # PostgreSQL local
-├── .env.example         # Variables de entorno de ejemplo
-├── .gitignore
-├── package.json
-├── DOCUMENTACION_TECNICA.md
-└── README.md
+├── src/                 # API Express
+│   ├── config/          # Variables de entorno y cliente Prisma
+│   ├── controllers/     # Lógica de cada recurso
+│   ├── middlewares/
+│   └── routes/
+├── prisma/schema.prisma # Esquema de datos
+├── frontend/            # React + Vite (opcional)
+├── docker-compose.yml   # PostgreSQL local
+└── .env.example
 ```
 
-## 1. Preparación local
-
-1. Instalar dependencias del backend:
+## Clonar y ejecutar en local
 
 ```bash
+git clone <URL_DEL_REPOSITORIO>
+cd <CARPETA_DEL_REPOSITORIO>
+cp .env.example .env #o touch
 npm install
+npm --prefix frontend install
+docker compose up -d db
+docker compose exec db psql -U app -d app_db -c "CREATE SCHEMA IF NOT EXISTS solution_template;" #por defecto usa public (ver variables de entorno)
+npm run prisma:generate
+npm run prisma:db:push
+npm run dev
 ```
 
-2. Instalar dependencias del frontend:
+La API queda disponible en `http://localhost:3000`. En otra terminal, el
+frontend de desarrollo se inicia con:
 
 ```bash
-cd frontend
-npm install
-cd ..
+npm --prefix frontend run dev
 ```
 
-3. Crear el archivo `.env` a partir del ejemplo:
+Luego se puede abrir `http://localhost:5173`. Para crear migraciones
+versionadas en lugar de sincronizar directamente el esquema:
 
 ```bash
-#o usar touch en linux
-cp .env.example .env
+npx prisma migrate dev --name init
 ```
 
-El archivo `.env` debe quedar con una `DATABASE_URL` apuntando a PostgreSQL local, por ejemplo:
+
+## Variables de entorno y URL del esquema
+
+El archivo `.env.example` contiene una URL local compatible con el servicio de
+Docker:
 
 ```env
-PORT=3000
-NODE_ENV=development
-DATABASE_URL="postgresql://ladies:ladies_dev@localhost:5432/ladies?schema=public"
+DATABASE_URL="postgresql://app:app_password@localhost:5432/app_db?schema=solution_template"
+CORS_ORIGINS="http://localhost:5173"
 ```
 
-## 2. Levantar PostgreSQL con Docker
+`DATABASE_URL` debe apuntar a la base PostgreSQL que se usará. El parámetro
+`schema=solution_template` indica el esquema aislado de esta solución. Creá ese
+schema una sola vez antes de ejecutar Prisma:
 
-Desde la raíz del proyecto:
+```sql
+CREATE SCHEMA IF NOT EXISTS solution_template;
+```
+
+`CORS_ORIGINS` acepta varios orígenes separados por comas. En producción debe
+incluir únicamente los frontends autorizados.
+
+## Frontend integrado en Express
+
+Para compilar el frontend y servirlo desde el mismo proceso de Express:
 
 ```bash
-docker compose up -d
+npm run build
+npm start
 ```
 
-Esto levanta un contenedor PostgreSQL con los datos definidos en `docker-compose.yml`.
+Express sirve `frontend/dist`, mantiene la API bajo `/api` y aplica fallback
+de SPA para las rutas del frontend. Para que el build use el mismo origen,
+se puede crear `frontend/.env` con:
 
-## 3. Preparar la base con Prisma
-
-Si la base está recién creada o si se quiere reinitializar el esquema:
-
-```bash
-npx prisma migrate dev --name init
+```env
+VITE_API_URL=/api
 ```
 
-O, si no hay migraciones aún:
+El frontend también puede desplegarse de forma independiente; en ese caso
+`VITE_API_URL` debe ser la URL pública de la API terminada en `/api`.
 
-```bash
-npx prisma generate
-```
+## Desplegar el backend en Railway
 
-## 4. Ejecutar la aplicación en local
+1. Crear un proyecto con un servicio PostgreSQL y un servicio para este
+   repositorio. Cada solución nueva debe ser un servicio Node independiente.
+2. Elegir un nombre único para el schema, por ejemplo `cliente_a`, y crear ese
+   schema en la base compartida desde la consola SQL de Railway:
+   `CREATE SCHEMA cliente_a;`.
+3. Configurar en el servicio de la aplicación `DATABASE_URL` usando la
+   referencia de la base de Railway y agregando `?schema=cliente_a`.
+4. Definir `CORS_ORIGINS` con la URL del frontend, además de `NODE_ENV=production`.
+5. Usar `npm run build` como comando de build y `npm start` como comando de
+   inicio.
+6. Ejecutar `npm run prisma:db:push` una vez desde el servicio (o usar
+   `npm run prisma:migrate:deploy` cuando el repositorio tenga migraciones
+   versionadas).
 
-Backend:
+Railway asigna `PORT` automáticamente. El endpoint de comprobación es
+`GET /api/health`.
 
-```bash
-npm run dev
-```
+## Desplegar solo el frontend en Vercel
 
-Frontend:
+1. Importar el repositorio en Vercel y seleccionar `frontend` como
+   **Root Directory**.
+2. Mantener `npm run build` como comando de build y `dist` como directorio de
+   salida.
+3. Crear `VITE_API_URL` con la URL pública del backend, por ejemplo
+   `https://<backend>/api`.
+4. Agregar esa URL de Vercel a `CORS_ORIGINS` en el backend.
 
-```bash
-cd frontend
-npm run dev
-```
+El backend debe estar desplegado y accesible por HTTPS para que el frontend
+pueda consultar la API.
 
-El backend normalmente corre en:
+## Flujo para una solución nueva
 
-```text
-http://localhost:3000
-```
+1. Cloná esta plantilla en un repositorio nuevo y elegí un nombre para la
+   solución.
+2. Copiá `.env.example` a `.env` y cambiá el nombre del schema; no cambies el
+   `schema.prisma` para separar soluciones, porque el aislamiento lo determina
+   `DATABASE_URL`.
+3. Agregá los modelos propios en `prisma/schema.prisma` y creá una migración con
+   `npm run prisma:migrate -- --name nombre_del_cambio`.
+4. Agregá cada recurso siguiendo `controller + routes` y registralo en
+   `src/routes/index.js`.
+5. En Railway configurá un servicio Node nuevo, la `DATABASE_URL` con el schema
+   propio y las variables de CORS. No reutilices el schema de otra solución.
+6. Elegí frontend embebido o Vercel según la sección correspondiente y probá
+   `GET /api/health`.
 
-Y el frontend en:
+## API de ejemplo
 
-```text
-http://localhost:5173
-```
+| Método | Ruta | Descripción |
+| --- | --- | --- |
+| GET | `/api/health` | Comprueba que la API está activa |
+| GET | `/api/examples` | Lista los registros de ejemplo |
+| GET | `/api/examples/:id` | Obtiene un registro por ID |
+| POST | `/api/examples` | Crea un registro con `{ "name": "..." }` |
 
-## 5. Endpoints principales
-
-- `GET /api/health` → chequeo del backend
-- `GET /api/examples` → lista ejemplos
-- `GET /api/examples/:id` → trae un ejemplo por ID
-- `POST /api/examples` → crea un ejemplo
-
-## 6. Convenciones para trabajar en equipo
-
-- El archivo `.env` nunca se sube al repositorio.
-- La base de datos local se levanta con Docker.
-- Las migraciones se versionan dentro de `prisma/migrations/`.
-- Cada recurso nuevo sigue el patrón: controlador + ruta + modelo Prisma si aplica.
-
-## 7. Estado de despliegue
-
-La integración con Railway y Vercel todavía no está implementada. Este repo queda preparado para esa etapa, pero la configuración de producción y la variable `VITE_API_URL` se completarán en el momento en que se despliegue el backend y el frontend en esos proveedores.
-
-## 8. Flujo recomendado para un desarrollador nuevo
-
-```bash
-git clone <repo>
-cd ladies
-npm install
-cd frontend && npm install && cd ..
-cp .env.example .env
-
-docker compose up -d
-npx prisma migrate dev --name init
-npm run dev
-```
-
-En otra terminal:
-
-```bash
-cd frontend
-npm run dev
-```
+El recurso `Example` es deliberadamente pequeño: sirve como punto de partida
+para agregar cada solución con su modelo Prisma, controlador y rutas propias.
