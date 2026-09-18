@@ -29,11 +29,11 @@ frontend React + Vite opcional.
 ```bash
 git clone <URL_DEL_REPOSITORIO>
 cd <CARPETA_DEL_REPOSITORIO>
-cp .env.example .env
+cp .env.example .env #o touch
 npm install
 npm --prefix frontend install
 docker compose up -d db
-docker compose exec db psql -U app -d app_db -c "CREATE SCHEMA IF NOT EXISTS solution_template;"
+docker compose exec db psql -U app -d app_db -c "CREATE SCHEMA IF NOT EXISTS solution_template;" #por defecto usa public (ver variables de entorno)
 npm run prisma:generate
 npm run prisma:db:push
 npm run dev
@@ -50,8 +50,9 @@ Luego se puede abrir `http://localhost:5173`. Para crear migraciones
 versionadas en lugar de sincronizar directamente el esquema:
 
 ```bash
-npm run prisma:migrate -- --name init
+npx prisma migrate dev --name init
 ```
+
 
 ## Variables de entorno y URL del esquema
 
