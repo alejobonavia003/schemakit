@@ -1,29 +1,60 @@
-// Cada controlador maneja la lógica de un recurso.
-// Cuando agreguen recursos nuevos (usuarios, productos, etc.)
-// pueden copiar este archivo como plantilla.
+import { prisma } from '../config/prisma.js';
 
-export function getExamples(req, res) {
-  res.json({
-    ok: true,
-    data: [
-      { id: 1, name: 'Ejemplo 1' },
-      { id: 2, name: 'Ejemplo 2' },
-    ],
-  });
+export async function getExamples(req, res, next) {
+  try {
+    const examples = await prisma.example.findMany({
+      orderBy: { id: 'asc' },
+    });
+
+    res.json({ ok: true, data: examples });
+  } catch (error) {
+    next(error);
+  }
 }
 
-export function getExampleById(req, res) {
-  const { id } = req.params;
-  res.json({
-    ok: true,
-    data: { id: Number(id), name: `Ejemplo ${id}` },
-  });
+export async function getExampleById(req, res, next) {
+  const id = Number(req.params.id);
+
+  if (!Number.isInteger(id) || id < 1) {
+    return res.status(400).json({
+      ok: false,
+      error: { message: 'El ID debe ser un número entero positivo' },
+    });
+  }
+
+  try {
+    const example = await prisma.example.findUnique({ where: { id } });
+
+    if (!example) {
+      return res.status(404).json({
+        ok: false,
+        error: { message: 'Ejemplo no encontrado' },
+      });
+    }
+
+    res.json({ ok: true, data: example });
+  } catch (error) {
+    next(error);
+  }
 }
 
-export function createExample(req, res) {
-  const body = req.body;
-  res.status(201).json({
-    ok: true,
-    data: body,
-  });
+export async function createExample(req, res, next) {
+  const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+
+  if (!name) {
+    return res.status(400).json({
+      ok: false,
+      error: { message: 'El campo name es obligatorio' },
+    });
+  }
+
+  try {
+    const example = await prisma.example.create({
+      data: { name },
+    });
+
+    res.status(201).json({ ok: true, data: example });
+  } catch (error) {
+    next(error);
+  }
 }

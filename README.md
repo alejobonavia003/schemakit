@@ -1,107 +1,155 @@
-# Mi API
+# Plantilla multi-solución
 
-Base de servidor para una API REST con Node.js y Express, acompañada de un
-frontend modular en React + Vite.
+Plantilla genérica para construir varias soluciones sobre una misma API:
+Express en el backend, Prisma como ORM, PostgreSQL como base de datos y un
+frontend React + Vite opcional.
 
-## Estructura del proyecto
+## Requisitos
 
-El backend y el frontend viven en el mismo repositorio, pero tienen sus
-dependencias y comandos separados:
+- Node.js 18 o superior y npm
+- Docker con Docker Compose para el entorno local
+- Una base PostgreSQL para cualquier entorno desplegado
+
+## Estructura
 
 ```text
 ├── src/                 # API Express
-└── frontend/            # Aplicación React + Vite
-    └── src/
-        ├── services/    # Cliente para consumir la API
-        └── modules/     # Módulos de cada solución
+│   ├── config/          # Variables de entorno y cliente Prisma
+│   ├── controllers/     # Lógica de cada recurso
+│   ├── middlewares/
+│   └── routes/
+├── prisma/schema.prisma # Esquema de datos
+├── frontend/            # React + Vite (opcional)
+├── docker-compose.yml   # PostgreSQL local
+└── .env.example
 ```
 
-## Estructura del backend
-
-```
-mi-api/
-├── src/
-│   ├── config/          # Configuración (variables de entorno, etc.)
-│   ├── controllers/     # Lógica de negocio de cada recurso
-│   ├── middlewares/     # Middlewares (errores, validaciones, auth...)
-│   ├── routes/          # Definición de endpoints
-│   ├── app.js           # Configuración de Express (middlewares, rutas)
-│   └── server.js        # Punto de entrada, levanta el servidor
-├── .env.example
-├── .gitignore
-└── package.json
-```
-
-## Cómo empezar
-
-1. Instalar dependencias:
-   ```bash
-   npm install
-   ```
-
-2. Crear el archivo `.env` a partir del ejemplo:
-   ```bash
-   cp .env.example .env
-   ```
-
-3. Levantar el servidor en modo desarrollo (se reinicia solo al guardar cambios):
-   ```bash
-   npm run dev
-   ```
-
-4. Probar que funciona entrando a:
-   ```
-   http://localhost:3000/api/health
-   ```
-
-### Frontend
-
-En otra terminal:
+## Clonar y ejecutar en local
 
 ```bash
-cd frontend
-npm install
+git clone <URL_DEL_REPOSITORIO>
+cd <CARPETA_DEL_REPOSITORIO>
 cp .env.example .env
+npm install
+npm --prefix frontend install
+docker compose up -d db
+docker compose exec db psql -U app -d app_db -c "CREATE SCHEMA IF NOT EXISTS solution_template;"
+npm run prisma:generate
+npm run prisma:db:push
 npm run dev
 ```
 
-El frontend quedará disponible en `http://localhost:5173` y usará
-`VITE_API_URL` para conectarse al backend. Cada solución nueva puede agregarse
-como un módulo dentro de `frontend/src/modules/`.
-
-Para generar la versión de producción:
+La API queda disponible en `http://localhost:3000`. En otra terminal, el
+frontend de desarrollo se inicia con:
 
 ```bash
-cd frontend
-npm run build
+npm --prefix frontend run dev
 ```
 
-## Cómo agregar un endpoint nuevo
+Luego se puede abrir `http://localhost:5173`. Para crear migraciones
+versionadas en lugar de sincronizar directamente el esquema:
 
-Supongamos que quieren agregar el recurso `users`. Los pasos son siempre los mismos:
+```bash
+npm run prisma:migrate -- --name init
+```
 
-1. **Controlador** (`src/controllers/user.controller.js`): la lógica de qué hace cada endpoint.
-2. **Rutas** (`src/routes/user.routes.js`): qué método HTTP y URL dispara cada función del controlador.
-3. **Registrar la ruta** en `src/routes/index.js`:
-   ```js
-   import userRoutes from './user.routes.js';
-   router.use('/users', userRoutes);
-   ```
+## Variables de entorno y URL del esquema
 
-Usen `src/controllers/example.controller.js` y `src/routes/example.routes.js` como plantilla, son justo para eso.
+El archivo `.env.example` contiene una URL local compatible con el servicio de
+Docker:
 
-## Endpoints de ejemplo incluidos
+```env
+DATABASE_URL="postgresql://app:app_password@localhost:5432/app_db?schema=solution_template"
+CORS_ORIGINS="http://localhost:5173"
+```
 
-| Método | Ruta                  | Descripción              |
-|--------|-----------------------|---------------------------|
-| GET    | /api/health            | Chequeo de que el server anda |
-| GET    | /api/examples          | Lista todos los ejemplos |
-| GET    | /api/examples/:id      | Trae un ejemplo por id   |
-| POST   | /api/examples          | Crea un ejemplo nuevo    |
+`DATABASE_URL` debe apuntar a la base PostgreSQL que se usará. El parámetro
+`schema=solution_template` indica el esquema aislado de esta solución. Creá ese
+schema una sola vez antes de ejecutar Prisma:
 
-## Trabajando en equipo (con tu amigo)
+```sql
+CREATE SCHEMA IF NOT EXISTS solution_template;
+```
 
-- Suban este proyecto a un repositorio de Git (GitHub, GitLab, etc.) apenas puedan, así los dos trabajan sobre el mismo código.
-- El `.env` **no se sube** al repo (ya está en `.gitignore`), cada uno crea el suyo local a partir de `.env.example`.
-- Cuando agreguen un recurso nuevo, sigan siempre el mismo patrón (controller + routes) para que el código quede prolijo y fácil de leer entre los dos.
-- Si más adelante necesitan una base de datos, validaciones (ej. `zod` o `joi`), autenticación (ej. `jsonwebtoken`), o testing (ej. `jest` o `vitest`), esta estructura ya está preparada para sumarlas sin reescribir nada.
+`CORS_ORIGINS` acepta varios orígenes separados por comas. En producción debe
+incluir únicamente los frontends autorizados.
+
+## Frontend integrado en Express
+
+Para compilar el frontend y servirlo desde el mismo proceso de Express:
+
+```bash
+npm run build
+npm start
+```
+
+Express sirve `frontend/dist`, mantiene la API bajo `/api` y aplica fallback
+de SPA para las rutas del frontend. Para que el build use el mismo origen,
+se puede crear `frontend/.env` con:
+
+```env
+VITE_API_URL=/api
+```
+
+El frontend también puede desplegarse de forma independiente; en ese caso
+`VITE_API_URL` debe ser la URL pública de la API terminada en `/api`.
+
+## Desplegar el backend en Railway
+
+1. Crear un proyecto con un servicio PostgreSQL y un servicio para este
+   repositorio. Cada solución nueva debe ser un servicio Node independiente.
+2. Elegir un nombre único para el schema, por ejemplo `cliente_a`, y crear ese
+   schema en la base compartida desde la consola SQL de Railway:
+   `CREATE SCHEMA cliente_a;`.
+3. Configurar en el servicio de la aplicación `DATABASE_URL` usando la
+   referencia de la base de Railway y agregando `?schema=cliente_a`.
+4. Definir `CORS_ORIGINS` con la URL del frontend, además de `NODE_ENV=production`.
+5. Usar `npm run build` como comando de build y `npm start` como comando de
+   inicio.
+6. Ejecutar `npm run prisma:db:push` una vez desde el servicio (o usar
+   `npm run prisma:migrate:deploy` cuando el repositorio tenga migraciones
+   versionadas).
+
+Railway asigna `PORT` automáticamente. El endpoint de comprobación es
+`GET /api/health`.
+
+## Desplegar solo el frontend en Vercel
+
+1. Importar el repositorio en Vercel y seleccionar `frontend` como
+   **Root Directory**.
+2. Mantener `npm run build` como comando de build y `dist` como directorio de
+   salida.
+3. Crear `VITE_API_URL` con la URL pública del backend, por ejemplo
+   `https://<backend>/api`.
+4. Agregar esa URL de Vercel a `CORS_ORIGINS` en el backend.
+
+El backend debe estar desplegado y accesible por HTTPS para que el frontend
+pueda consultar la API.
+
+## Flujo para una solución nueva
+
+1. Cloná esta plantilla en un repositorio nuevo y elegí un nombre para la
+   solución.
+2. Copiá `.env.example` a `.env` y cambiá el nombre del schema; no cambies el
+   `schema.prisma` para separar soluciones, porque el aislamiento lo determina
+   `DATABASE_URL`.
+3. Agregá los modelos propios en `prisma/schema.prisma` y creá una migración con
+   `npm run prisma:migrate -- --name nombre_del_cambio`.
+4. Agregá cada recurso siguiendo `controller + routes` y registralo en
+   `src/routes/index.js`.
+5. En Railway configurá un servicio Node nuevo, la `DATABASE_URL` con el schema
+   propio y las variables de CORS. No reutilices el schema de otra solución.
+6. Elegí frontend embebido o Vercel según la sección correspondiente y probá
+   `GET /api/health`.
+
+## API de ejemplo
+
+| Método | Ruta | Descripción |
+| --- | --- | --- |
+| GET | `/api/health` | Comprueba que la API está activa |
+| GET | `/api/examples` | Lista los registros de ejemplo |
+| GET | `/api/examples/:id` | Obtiene un registro por ID |
+| POST | `/api/examples` | Crea un registro con `{ "name": "..." }` |
+
+El recurso `Example` es deliberadamente pequeño: sirve como punto de partida
+para agregar cada solución con su modelo Prisma, controlador y rutas propias.
