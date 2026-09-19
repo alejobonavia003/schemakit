@@ -19,7 +19,7 @@ frontend React + Vite opcional.
 │   ├── middlewares/
 │   └── routes/
 ├── prisma/schema.prisma # Esquema de datos
-├── frontend/            # React + Vite (opcional)
+├── frontend/            # React + Vite kkkkkkkkkkkkkk(opcional)
 ├── docker-compose.yml   # PostgreSQL local
 └── .env.example
 ```
@@ -37,6 +37,9 @@ docker compose exec db psql -U app -d app_db -c "CREATE SCHEMA IF NOT EXISTS sol
 npm run prisma:generate
 npm run prisma:db:push
 npm run dev
+
+#algo que use 
+npm run prisma:db:push
 ```
 
 La API queda disponible en `http://localhost:3000`. En otra terminal, el
