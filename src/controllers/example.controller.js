@@ -1,3 +1,4 @@
+import e from 'cors';
 import { prisma } from '../config/prisma.js';
 
 export async function getExamples(req, res, next) {
@@ -59,33 +60,3 @@ export async function createExample(req, res, next) {
   }
 }
 
-export async function createExample(req, res) {
-  try {
-    const { name } = req.body;
-
-    if (!name) {
-      return res.status(400).json({
-        ok: false,
-        error: 'El campo name es obligatorio',
-      });
-    }
-
-    const example = await prisma.example.create({
-      data: {
-        name,
-      },
-    });
-
-    res.status(201).json({
-      ok: true,
-      data: example,
-    });
-  } catch (error) {
-    console.error('Error creando example:', error);
-
-    res.status(500).json({
-      ok: false,
-      error: 'Error al crear el ejemplo',
-    });
-  }
-}

@@ -1,0 +1,30 @@
+# Dependencias (se instalan dentro de la imagen)
+**/node_modules
+
+# Variables de entorno (nunca dentro de la imagen)
+.env
+.env.*
+!.env.example
+
+# Git
+.git
+.gitignore
+
+# Builds
+**/dist
+**/build
+
+# Logs
+*.log
+npm-debug.log*
+
+# Archivos de Docker (no hace falta copiarlos a la imagen)
+Dockerfile
+**/Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Editor / sistema operativo
+.vscode
+.idea
+.DS_Store
