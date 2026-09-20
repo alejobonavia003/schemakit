@@ -11,7 +11,7 @@ RUN apt-get update -y \
 
 WORKDIR /app
 
-# ---------- development: lo que usamos en docker compose ----------
+# ---------- development: lo que usa docker compose ----------
 FROM base AS development
 
 ENV NODE_ENV=development
@@ -36,4 +36,38 @@ EXPOSE 3000
 
 CMD ["npm", "run", "dev"]
 
-# ---------- production: se completa en la Fase 14 (Railway) ----------
+# ---------- build: compila el frontend (este stage no llega a la imagen final) ----------
+FROM base AS build
+
+ENV NODE_ENV=development
+
+COPY package.json package-lock.json ./
+COPY prisma ./prisma
+RUN npm ci
+
+COPY frontend/package.json frontend/package-lock.json ./frontend/
+RUN npm --prefix frontend ci
+
+COPY . .
+
+# Genera Prisma Client y compila el frontend en frontend/dist
+RUN DATABASE_URL="postgresql://user:pass@localhost:5432/db" npx prisma generate \
+    && npm --prefix frontend run build
+
+# ---------- production: DEBE ser el último stage ----------
+# Railway (y "docker build" sin --target) construyen el último stage.
+# docker-compose usa target: development, así que no se ve afectado.
+FROM base AS production
+
+ENV NODE_ENV=production
+
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/frontend/dist ./frontend/dist
+COPY package.json prisma.config.ts ./
+COPY prisma ./prisma
+COPY src ./src
+
+EXPOSE 3000
+
+# Aplica las migraciones pendientes y arranca. Railway define PORT automáticamente.
+CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
