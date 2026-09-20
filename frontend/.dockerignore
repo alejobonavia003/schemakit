@@ -1,0 +1,20 @@
+# Dependencias (se instalan dentro de la imagen)
+node_modules
+
+# Variables de entorno
+.env
+.env.*
+!.env.example
+
+# Builds
+dist
+build
+
+# Git y logs
+.git
+*.log
+
+# Editor / sistema operativo
+.vscode
+.idea
+.DS_Store
