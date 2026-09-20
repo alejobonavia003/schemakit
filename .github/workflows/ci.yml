@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  production-image:
+    name: Imagen de producción
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Construir imagen (stage production)
+        run: docker build -t schemakit:ci .
+
+      - name: Comprobar que el frontend quedó compilado
+        run: docker run --rm schemakit:ci ls frontend/dist/index.html
+
+  dev-stack:
+    name: Stack de desarrollo (smoke test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Preparar variables de entorno
+        run: cp .env.example .env
+
+      - name: Validar docker-compose.yml
+        run: docker compose config -q
+
+      - name: Levantar el stack
+        run: docker compose up -d --build
+
+      - name: Esperar a la API
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:3000/api/health; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "La API no respondió a tiempo"
+          exit 1
+
+      - name: Probar API con base de datos y migraciones
+        run: curl -fsS http://localhost:3000/api/examples
+
+      - name: Probar proxy del frontend hacia la API
+        run: |
+          for i in $(seq 1 15); do
+            if curl -fsS http://localhost:5173/api/health; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "El proxy de Vite no respondió"
+          exit 1
+
+      - name: Mostrar logs si algo falló
+        if: failure()
+        run: docker compose logs
+
+      - name: Apagar el stack
+        if: always()
+        run: docker compose down -v

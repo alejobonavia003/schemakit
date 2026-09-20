@@ -1,9 +1,11 @@
 {
-  "name": "express-prisma-template",
+  "name": "schemakit",
   "version": "1.0.0",
-  "description": "Plantilla multi-solución con Express, Prisma y PostgreSQL",
+  "description": "Starter full-stack para lanzar varias soluciones sobre una misma base PostgreSQL, cada una aislada en su propio schema.",
   "main": "src/server.js",
   "type": "module",
+  "license": "MIT",
+  "author": "alejo bonavia",
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
