@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+const API_URL = import.meta.env.VITE_API_URL || '/'
 
 async function request(path, options = {}) {
   const response = await fetch(`${API_URL}${path}`, {
@@ -17,6 +17,6 @@ async function request(path, options = {}) {
 }
 
 export async function getExamples() {
-  const result = await request('/examples')
+  const result = await request('api/examples')
   return result.data
 }

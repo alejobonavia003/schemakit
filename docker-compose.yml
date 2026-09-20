@@ -6,6 +6,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_SCHEMA: ${POSTGRES_SCHEMA:-solution_template}
     ports:
       - "5433:5432"
     volumes:
@@ -26,13 +27,30 @@ services:
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=solution_template
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}?schema=${POSTGRES_SCHEMA:-solution_template}
+    # Al iniciar: genera Prisma Client, aplica las migraciones pendientes y arranca con --watch
+    command: sh -c "npx prisma generate && npx prisma migrate deploy && npm run dev"
     volumes:
       - ./:/app
       - /app/node_modules
     depends_on:
       db:
         condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "5173:5173"
+    environment:
+      # El navegador llama a /api en localhost:5173 y el proxy de Vite lo reenvía al backend.
+      # Dentro de Docker el backend se llama "backend", no "localhost".
+      VITE_PROXY_TARGET: http://backend:${PORT:-3000}
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:

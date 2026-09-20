@@ -23,7 +23,7 @@ function App() {
     <main className="app-shell">
       <header className="app-header">
         <div>
-          <p className="eyebrow">Plataforma modular</p>
+          <p className="eyebrow">Lucio modular</p>
           <h1>Panel de soluciones</h1>
           <p className="subtitle">
             Frontend central para conectar los distintos módulos con la API.
