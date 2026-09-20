@@ -24,7 +24,7 @@ function App() {
       <header className="app-header">
         <div>
           <p className="eyebrow">Lucio modular</p>
-          <h1>Panel de soluciones</h1>
+          <h1>Panel de solucionesssssss</h1>
           <p className="subtitle">
             Frontend central para conectar los distintos módulos con la API.
           </p>

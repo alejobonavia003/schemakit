@@ -3,6 +3,7 @@ import { prisma } from '../config/prisma.js';
 
 export async function getExamples(req, res, next) {
   try {
+    console.log('CORS_ORIGINS:', process.env.CORS_ORIGINS);
     const examples = await prisma.example.findMany({
       orderBy: { id: 'asc' },
     });

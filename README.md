@@ -8,6 +8,7 @@ Express · Prisma · PostgreSQL · React + Vite · Docker · Railway
 
 [![CI](https://github.com/alejobonavia003/schemakit/actions/workflows/ci.yml/badge.svg)](https://github.com/alejobonavia003/schemakit/actions/workflows/ci.yml)
 ![Node](https://img.shields.io/badge/Node-22-339933?logo=node.js&logoColor=white)
+[![License](https://img.shields.io/github/license/alejobonavia003/schemakit)](LICENSE)
 ![Express](https://img.shields.io/badge/Express-4-000000?logo=express&logoColor=white)
 ![Prisma](https://img.shields.io/badge/Prisma-6-2D3748?logo=prisma&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
@@ -230,7 +231,7 @@ agregar cada solución con su modelo Prisma, controlador y rutas propias.
 
 ## Despliegue
 
-### Backend con frontend integrado en Railway (recomendado)
+### Backend con frontend integrado en Railway 
 
 El `Dockerfile` tiene un stage `production` (el último) que compila el frontend y
 deja una imagen con Express sirviendo la API y `frontend/dist`. Railway detecta el
@@ -300,6 +301,8 @@ consultar la API.
 - [ ] Seguridad básica: `helmet` y límite de peticiones
 - [ ] Lint y formato (ESLint y Prettier)
 
+Ver el [roadmap completo](https://github.com/alejobonavia003/schemakit/issues/18)]
+
 ## Contribuir
 
 Las contribuciones son bienvenidas:
@@ -310,4 +313,6 @@ Las contribuciones son bienvenidas:
 4. Abrí un Pull Request. La CI tiene que pasar.
 
 
-   [![License](https://img.shields.io/github/license/alejobonavia003/schemakit)](LICENSE)
+## Licencia
+
+Distribuido bajo la licencia [MIT](LICENSE).
